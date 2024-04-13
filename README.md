@@ -5,7 +5,7 @@
 [WebSerial](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API) bindings for [serialport](https://www.npmjs.com/package/serialport) module.
 
 # INSTALL
-1. Install module.
+1. Install module:
     ```sh
     npm i serialport-bindings-webserial
     ```
