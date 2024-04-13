@@ -5,8 +5,12 @@
 	"main": "src/index.js",
 	"type": "module",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"pub": "npm version patch && npm publish --access public"
 	},
 	"author": "kirill.zhumarin@gmail.com",
-	"license": "MIT"
+	"license": "MIT",
+	"repository": {
+		"url": "git+https://github.com/Azq2/node-serialport-bindings-webserial.git"
+	}
 }
