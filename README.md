@@ -1,5 +1,7 @@
 # SUMMARY
 
+[![NPM Version](https://img.shields.io/npm/v/serialport-bindings-webserial)](https://www.npmjs.com/package/serialport-bindings-webserial)
+
 [WebSerial](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API) bindings for [serialport](https://www.npmjs.com/package/serialport) module.
 
 # INSTALL
