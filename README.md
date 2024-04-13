@@ -22,6 +22,7 @@
     console.log(ports);
     ```
 2. Open any port:
+
     The browser will show pop-up with all available ports.
     ```js
     let port = await new SerialPortStream({
@@ -30,7 +31,8 @@
         baudRate: 115200
     });
     ```
-3. Open any port with filters:
+4. Open any port with filters:
+
     The browser will show pop-up with all available ports which fit the requested filter.
     ```js
     let webserialRequestOptions = {
@@ -44,7 +46,8 @@
         webserialRequestOptions
     });
     ```
-4. Open with native SerialPort:
+5. Open with native SerialPort:
+
     You can open a port using reference to the native SerialPort object.
     ```js
     let nativePort = await navigator.requestPort({});
@@ -56,7 +59,7 @@
         webserialPort: nativePort
     });
     ```
-5. Open port by virtual path:
+6. Open port by virtual path:
     ```js
     let ports = await WebSerialBinding.list();
     
