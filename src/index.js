@@ -37,6 +37,7 @@ class WebSerialPort {
 		if (this.isOpen) {
 			this.isOpen = false;
 			await this._close();
+			this.internalBuffer = new Uint8Array(0);
 		}
 
 		this.unlock();
@@ -67,6 +68,8 @@ class WebSerialPort {
 			this.writer.releaseLock();
 			this.writer = null;
 		}
+
+		this.lastWriteCall = null;
 
 		try { await this.port.close(); } catch (e) { }
 	}
