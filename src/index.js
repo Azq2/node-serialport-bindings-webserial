@@ -142,7 +142,7 @@ class WebSerialPort {
 		if (!readed || readed.done) {
 			if (this.updatingPortSettings)
 				return this.read(buffer, offset, length);
-			return { bytesRead: 0 };
+			return { bytesRead: readedFromInternalBuffer };
 		}
 
 		if (readed.value.length > length) {
