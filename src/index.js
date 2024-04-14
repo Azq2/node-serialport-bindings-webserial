@@ -50,6 +50,7 @@ class WebSerialPort {
 			flowControl:	this.options.rtscts ? "hardware" : "none",
 			parity:			this.options.parity || "none",
 			stopBits:		this.options.stopBits,
+			...(this.options.webSerialOpenOptions || {}),
 		});
 
 		this.reader = this.port.readable.getReader();
@@ -258,10 +259,10 @@ async function open(options) {
 	let binding;
 
 	if (options.path == "webserial://any") {
-		if (options.webserialPort) {
-			binding = new WebSerialPort(options.webserialPort, options);
+		if (options.webSerialPort) {
+			binding = new WebSerialPort(options.webSerialPort, options);
 		} else {
-			let port = await navigator.serial.requestPort(options.webserialRequestOptions || {});
+			let port = await navigator.serial.requestPort(options.webSerialRequestOptions || {});
 			binding = new WebSerialPort(port, options);
 		}
 	} else {

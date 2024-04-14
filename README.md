@@ -31,38 +31,53 @@
         baudRate: 115200
     });
     ```
-4. Open any port with filters:
+3. Open any port with custom options for [SerialPort.open](https://developer.mozilla.org/en-US/docs/Web/API/SerialPort/open):
 
-    The browser will show pop-up with all available ports which fit the requested filter.
+    The browser will show pop-up with all available ports.
     ```js
-    let webserialRequestOptions = {
-        filters: [{ usbVendorId: 0x067B, usbProductId: 0x2303 }]
+    let webSerialOpenOptions = {
+        bufferSize: 4 * 1024 // https://developer.mozilla.org/en-US/docs/Web/API/SerialPort/open#buffersize
     };
-    
+
     let port = await new SerialPortStream({
         binding: WebSerialBinding,
         path: 'webserial://any',
         baudRate: 115200,
-        webserialRequestOptions
+        webSerialOpenOptions
+    });
+    ```
+4. Open any port with filters:
+
+    The browser will show pop-up with all available ports which fit the requested filter.
+    ```js
+    let webSerialRequestOptions = {
+        filters: [{ usbVendorId: 0x067B, usbProductId: 0x2303 }]
+    };
+
+    let port = await new SerialPortStream({
+        binding: WebSerialBinding,
+        path: 'webserial://any',
+        baudRate: 115200,
+        webSerialRequestOptions
     });
     ```
 5. Open with native SerialPort:
 
     You can open a port using reference to the native SerialPort object.
     ```js
-    let nativePort = await navigator.requestPort({});
-    
+    let webSerialPort = await navigator.requestPort({});
+
     let port = new SerialPortStream({
         binding: WebSerialBinding,
         path: 'webserial://any',
         baudRate: 115200,
-        webserialPort: nativePort
+        webSerialPort
     });
     ```
 6. Open port by virtual path:
     ```js
     let ports = await WebSerialBinding.list();
-    
+
     let port = new SerialPortStream({
         binding: WebSerialBinding,
         path: ports[0].path, // for example: webserial://usb0
