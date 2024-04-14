@@ -111,6 +111,7 @@ class WebSerialPort {
 
 	async read(buffer, offset, length) {
 		// Reuse redundant data from previous read.
+		let readedFromInternalBuffer = 0;
 		if (this.internalBuffer.length > 0) {
 			let availFromBuffer = Math.min(length, this.internalBuffer.length);
 
@@ -118,12 +119,13 @@ class WebSerialPort {
 
 			length -= availFromBuffer;
 			offset += availFromBuffer;
+			readedFromInternalBuffer += availFromBuffer;
 
 			this.internalBuffer = this.internalBuffer.slice(availFromBuffer);
 
 			if (!length) {
 				this.read_cnt--;
-				return { bytesRead: availFromBuffer };
+				return { bytesRead: readedFromInternalBuffer };
 			}
 		}
 
@@ -155,10 +157,10 @@ class WebSerialPort {
 			newInternalBuffer.set(redundantBytes, this.internalBuffer.length);
 			this.internalBuffer = newInternalBuffer;
 
-			return { bytesRead: length };
+			return { bytesRead: readedFromInternalBuffer + length };
 		} else {
 			buffer.set(readed.value, offset);
-			return { bytesRead: readed.value.length };
+			return { bytesRead: readedFromInternalBuffer + readed.value.length };
 		}
 	}
 
