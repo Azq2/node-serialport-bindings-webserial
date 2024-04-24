@@ -241,16 +241,31 @@ function getPortInfo(counters, port) {
 		vendorId:		undefined,
 	};
 
+	let url;
+
 	let path;
 	if (webInfo.usbVendorId) {
-		portInfo.path = `webserial://usb${counters.usb++}`;
+		url = new URL(`webserial://usb`);
 		portInfo.usbVendorId = webInfo.usbVendorId;
 		portInfo.usbProductId = webInfo.usbProductId;
 	} else if (webInfo.bluetoothServiceClassId) {
-		portInfo.path = `webserial://bluetooth${counters.bt++}`;
+		url = new URL(`webserial://bluetooth`);
 	} else {
-		portInfo.path = `webserial://port${counters.serial++}`;
+		url = new URL(`webserial://port`);
 	}
+
+	for (let k in webInfo) {
+		if (webInfo[k] != null)
+			url.searchParams.set(k, webInfo[k]);
+	}
+
+	let key = url.toString();
+	let portId = counters[key] || 0;
+
+	url.searchParams.set('n', portId);
+	portInfo.path = url.toString();
+
+	counters[key] = portId + 1;
 
 	return portInfo;
 }
@@ -278,7 +293,7 @@ async function open(options) {
 }
 
 async function getPortsMap() {
-	let counters = { usb: 0, bt: 0, serial: 0 };
+	let counters = {};
 	let map = {};
 	for (let port of await navigator.serial.getPorts()) {
 		let info = getPortInfo(counters, port);
@@ -288,7 +303,7 @@ async function getPortsMap() {
 }
 
 async function list() {
-	let counters = { usb: 0, bt: 0, serial: 0 };
+	let counters = {};
 	let ports = [];
 	for (let port of await navigator.serial.getPorts()) {
 		ports.push(getPortInfo(counters, port));
