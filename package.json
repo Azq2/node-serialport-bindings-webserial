@@ -2,15 +2,28 @@
 	"name": "serialport-bindings-webserial",
 	"version": "0.0.9",
 	"description": "WebSerial bindings for serialport.",
-	"main": "src/index.js",
 	"type": "module",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"pub": "npm version patch && npm publish --access public"
+		"pub": "npm version patch && npm publish --access public",
+		"build": "tsc",
+		"postinstall": "patch-package"
 	},
 	"author": "kirill.zhumarin@gmail.com",
 	"license": "MIT",
 	"repository": {
 		"url": "git+https://github.com/Azq2/node-serialport-bindings-webserial.git"
+	},
+	"devDependencies": {
+		"@types/node": "^20.12.7",
+		"patch-package": "^8.0.0",
+		"typescript": "^5.4.5"
+	},
+	"dependencies": {
+		"@serialport/bindings-interface": "^1.2.2",
+		"@tsconfig/node18": "^18.2.4",
+		"@types/w3c-web-serial": "^1.0.6"
 	}
 }
