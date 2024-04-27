@@ -12,7 +12,7 @@
 2. Import a module into your code:
     ```js
     import { SerialPortStream } from '@serialport/stream';
-    import WebSerialBinding from 'serialport-bindings-webserial';
+    import { WebSerialBinding } from 'serialport-bindings-webserial';
     ```
 
 # EXAMPLES
