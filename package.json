@@ -17,13 +17,11 @@
 		"url": "git+https://github.com/Azq2/node-serialport-bindings-webserial.git"
 	},
 	"devDependencies": {
-		"@types/node": "^20.12.7",
-		"patch-package": "^8.0.0",
-		"typescript": "^5.4.5"
-	},
-	"dependencies": {
 		"@serialport/bindings-interface": "^1.2.2",
 		"@tsconfig/node18": "^18.2.4",
-		"@types/w3c-web-serial": "^1.0.6"
+		"@types/node": "^20.12.7",
+		"@types/w3c-web-serial": "^1.0.6",
+		"patch-package": "^8.0.0",
+		"typescript": "^5.4.5"
 	}
 }
