@@ -8,8 +8,7 @@
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"pub": "npm version patch && npm publish --access public",
-		"build": "tsc",
-		"postinstall": "patch-package"
+		"build": "patch-package && tsc"
 	},
 	"author": "kirill.zhumarin@gmail.com",
 	"license": "MIT",
