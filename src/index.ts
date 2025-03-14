@@ -1,5 +1,6 @@
 import {
 	BindingInterface,
+	BindingPortInterface,
 	OpenOptions,
 	PortInfo,
 	PortStatus,
@@ -7,8 +8,8 @@ import {
 	UpdateOptions
 } from '@serialport/bindings-interface'
 
-export interface WebSerialBindingInterface extends BindingInterface<WebSerialPort, Required<WebSerialOpenOptions>, WebSerialPortInfo> {
-	getPortPath(nativePort: SerialPort): Promise<string|null>
+export interface WebSerialBindingInterface extends BindingInterface<WebSerialPortBinding, Required<WebSerialOpenOptions>, WebSerialPortInfo> {
+	getPortPath(nativePort: SerialPort): Promise<string | undefined>
 }
 
 export interface WebSerialOpenOptions extends OpenOptions {
@@ -21,7 +22,7 @@ export interface WebSerialPortInfo extends PortInfo {
 	nativePort: SerialPort;
 }
 
-export interface WebSerialBindingPortInterface {
+export interface WebSerialBindingPortInterface extends BindingPortInterface {
 	getNativePort(): SerialPort;
 }
 
@@ -31,17 +32,17 @@ interface WebSerialLock {
 	reject: (reason?: any) => void;
 }
 
-export class WebSerialPort implements WebSerialBindingPortInterface {
+export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 	readonly openOptions: Required<WebSerialOpenOptions>;
 	readonly port: SerialPort;
 	isOpen = false;
-	private lastWriteCall: Promise<void> = null;
+	private lastWriteCall?: Promise<void>;
 	private updatingPortSettings = false;
-	private lastSignalsValues: SerialOutputSignals = null;
+	private lastSignalsValues?: SerialOutputSignals;
 	private internalBuffer: Uint8Array;
-	private locked: WebSerialLock = null;
-	private reader: ReadableStreamDefaultReader<Uint8Array> = null;
-	private writer: WritableStreamDefaultWriter<Uint8Array> = null;
+	private locked?: WebSerialLock;
+	private reader?: ReadableStreamDefaultReader<Uint8Array>;
+	private writer?: WritableStreamDefaultWriter<Uint8Array>;
 
 	constructor(port: SerialPort, openOptions: Required<WebSerialOpenOptions>) {
 		this.port = port;
@@ -97,16 +98,16 @@ export class WebSerialPort implements WebSerialBindingPortInterface {
 		if (this.reader) {
 			try { await this.reader.cancel(); } catch (e) { }
 			this.reader.releaseLock();
-			this.reader = null;
+			this.reader = undefined;
 		}
 
 		if (this.writer) {
 			try { await this.writer.close(); } catch (e) { }
 			this.writer.releaseLock();
-			this.writer = null;
+			this.writer = undefined;
 		}
 
-		this.lastWriteCall = null;
+		this.lastWriteCall = undefined;
 
 		try { await this.port.close(); } catch (e) { }
 	}
@@ -202,7 +203,7 @@ export class WebSerialPort implements WebSerialBindingPortInterface {
 		// WebSerial doesn't provide an API for drain, we just wait for the last writing to be finished.
 		if (this.lastWriteCall) {
 			await this.lastWriteCall;
-			this.lastWriteCall = null;
+			this.lastWriteCall = undefined;
 		}
 	}
 
@@ -243,14 +244,14 @@ export class WebSerialPort implements WebSerialBindingPortInterface {
 	private async lock() {
 		this.locked && await this.waitForUnlock();
 		this.locked.promise = new Promise((resolve, reject) => {
-			this.locked = {promise: null, resolve, reject};
+			this.locked = { promise: undefined, resolve, reject };
 		});
 	}
 
 	private unlock() {
 		const lock = this.locked;
 		if (lock) {
-			this.locked = null;
+			this.locked = undefined;
 			lock.resolve(true);
 		}
 	}
@@ -304,24 +305,24 @@ function getPortInfo(counters: Record<string, number>, port: SerialPort): WebSer
 }
 
 export const WebSerialBinding: WebSerialBindingInterface = {
-	async open(options: Required<WebSerialOpenOptions>): Promise<WebSerialPort> {
-		let binding: WebSerialPort = null;
+	async open(options: Required<WebSerialOpenOptions>): Promise<WebSerialPortBinding> {
+		let binding: WebSerialPortBinding;
 
 		if (!('serial' in navigator))
 			throw new Error(`Your browser is not supporting WebSerial API.`);
 
 		if (options.path == "webserial://any") {
 			if (options.webSerialPort) {
-				binding = new WebSerialPort(options.webSerialPort, options);
+				binding = new WebSerialPortBinding(options.webSerialPort, options);
 			} else {
 				const port = await navigator.serial.requestPort(options.webSerialRequestOptions || {});
-				binding = new WebSerialPort(port, options);
+				binding = new WebSerialPortBinding(port, options);
 			}
 		} else {
 			const ports = await WebSerialBinding.list();
 			for (const port of ports) {
 				if (port.path === options.path) {
-					binding = new WebSerialPort(port.nativePort, options);
+					binding = new WebSerialPortBinding(port.nativePort, options);
 					break;
 				}
 			}
@@ -345,13 +346,13 @@ export const WebSerialBinding: WebSerialBindingInterface = {
 		return ports;
 	},
 
-	async getPortPath(nativePort: SerialPort): Promise<string|null> {
+	async getPortPath(nativePort: SerialPort): Promise<string | undefined> {
 		const ports = await WebSerialBinding.list();
 		for (const port of ports) {
 			if (port.nativePort === nativePort)
 				return port.path;
 		}
-		return null;
+		return undefined;
 	}
 };
 
