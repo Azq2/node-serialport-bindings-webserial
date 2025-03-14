@@ -1,4 +1,11 @@
-import { BindingInterface, BindingPortInterface, PortStatus, SetOptions, UpdateOptions, OpenOptions, PortInfo } from '@serialport/bindings-interface'
+import {
+	BindingInterface,
+	OpenOptions,
+	PortInfo,
+	PortStatus,
+	SetOptions,
+	UpdateOptions
+} from '@serialport/bindings-interface'
 
 export interface WebSerialBindingInterface extends BindingInterface<WebSerialPort, Required<WebSerialOpenOptions>, WebSerialPortInfo> {
 	getPortPath(nativePort: SerialPort): Promise<string|null>
@@ -8,21 +15,21 @@ export interface WebSerialOpenOptions extends OpenOptions {
 	webSerialOpenOptions: SerialOptions;
 	webSerialRequestOptions: SerialPortRequestOptions;
 	webSerialPort: SerialPort;
-};
+}
 
 export interface WebSerialPortInfo extends PortInfo {
 	nativePort: SerialPort;
-};
+}
 
 export interface WebSerialBindingPortInterface {
 	getNativePort(): SerialPort;
-};
+}
 
 interface WebSerialLock {
 	promise: Promise<boolean>;
 	resolve: (value: boolean) => void;
 	reject: (reason?: any) => void;
-};
+}
 
 export class WebSerialPort implements WebSerialBindingPortInterface {
 	readonly openOptions: Required<WebSerialOpenOptions>;
@@ -140,7 +147,7 @@ export class WebSerialPort implements WebSerialBindingPortInterface {
 		// Reuse redundant data from previous read.
 		let readedFromInternalBuffer = 0;
 		if (this.internalBuffer.length > 0) {
-			let availFromBuffer = Math.min(length, this.internalBuffer.length);
+			const availFromBuffer = Math.min(length, this.internalBuffer.length);
 
 			buffer.set(this.internalBuffer.slice(0, availFromBuffer), offset);
 
@@ -175,9 +182,9 @@ export class WebSerialPort implements WebSerialBindingPortInterface {
 			// We just save any redundant data in an internal buffer and return it on the next read.
 			buffer.set(readed.value.slice(0, length), offset);
 
-			let redundantBytes = readed.value.slice(length);
+			const redundantBytes = readed.value.slice(length);
 
-			let newInternalBuffer = new Uint8Array(this.internalBuffer.length + redundantBytes.length)
+			const newInternalBuffer = new Uint8Array(this.internalBuffer.length + redundantBytes.length)
 			newInternalBuffer.set(this.internalBuffer, 0);
 			newInternalBuffer.set(redundantBytes, this.internalBuffer.length);
 			this.internalBuffer = newInternalBuffer;
@@ -221,7 +228,7 @@ export class WebSerialPort implements WebSerialBindingPortInterface {
 	async get(): Promise<PortStatus> {
 		this.locked && await this.waitForUnlock();
 
-		let signals = await this.port.getSignals();
+		const signals = await this.port.getSignals();
 		return {
 			cts:		signals.clearToSend,
 			dsr:		signals.dataSetReady,
@@ -235,14 +242,13 @@ export class WebSerialPort implements WebSerialBindingPortInterface {
 
 	private async lock() {
 		this.locked && await this.waitForUnlock();
-		let promise: Promise<boolean> = new Promise((resolve, reject) => {
-			this.locked = { promise: null, resolve, reject };
+		this.locked.promise = new Promise((resolve, reject) => {
+			this.locked = {promise: null, resolve, reject};
 		});
-		this.locked.promise = promise;
 	}
 
 	private unlock() {
-		let lock = this.locked;
+		const lock = this.locked;
 		if (lock) {
 			this.locked = null;
 			lock.resolve(true);
@@ -257,9 +263,9 @@ export class WebSerialPort implements WebSerialBindingPortInterface {
 }
 
 function getPortInfo(counters: Record<string, number>, port: SerialPort): WebSerialPortInfo {
-	let webInfo: Record<string, any> = port.getInfo();
+	const webInfo: Record<string, any> = port.getInfo();
 
-	let portInfo: WebSerialPortInfo = {
+	const portInfo: WebSerialPortInfo = {
 		path:			"",
 		manufacturer:	undefined,
 		serialNumber:	undefined,
@@ -271,8 +277,6 @@ function getPortInfo(counters: Record<string, number>, port: SerialPort): WebSer
 	};
 
 	let url;
-
-	let path;
 	if (webInfo.usbVendorId) {
 		url = new URL(`webserial://usb`);
 		portInfo.vendorId = webInfo.usbVendorId;
@@ -283,13 +287,13 @@ function getPortInfo(counters: Record<string, number>, port: SerialPort): WebSer
 		url = new URL(`webserial://port`);
 	}
 
-	for (let k in webInfo) {
+	for (const k in webInfo) {
 		if (webInfo[k] != null)
 			url.searchParams.set(k, webInfo[k]);
 	}
 
-	let key = url.toString();
-	let portId = counters[key] || 0;
+	const key = url.toString();
+	const portId = counters[key] || 0;
 
 	url.searchParams.set('n', portId.toString());
 	portInfo.path = url.toString();
@@ -310,12 +314,12 @@ export const WebSerialBinding: WebSerialBindingInterface = {
 			if (options.webSerialPort) {
 				binding = new WebSerialPort(options.webSerialPort, options);
 			} else {
-				let port = await navigator.serial.requestPort(options.webSerialRequestOptions || {});
+				const port = await navigator.serial.requestPort(options.webSerialRequestOptions || {});
 				binding = new WebSerialPort(port, options);
 			}
 		} else {
-			let ports = await WebSerialBinding.list();
-			for (let port of ports) {
+			const ports = await WebSerialBinding.list();
+			for (const port of ports) {
 				if (port.path === options.path) {
 					binding = new WebSerialPort(port.nativePort, options);
 					break;
@@ -331,10 +335,10 @@ export const WebSerialBinding: WebSerialBindingInterface = {
 	},
 
 	async list(): Promise<WebSerialPortInfo[]> {
-		let counters: Record<string, number> = {};
+		const counters: Record<string, number> = {};
 		let ports: WebSerialPortInfo[] = [];
 		if ('serial' in navigator) {
-			for (let port of await navigator.serial.getPorts()) {
+			for (const port of await navigator.serial.getPorts()) {
 				ports.push(getPortInfo(counters, port));
 			}
 		}
@@ -342,8 +346,8 @@ export const WebSerialBinding: WebSerialBindingInterface = {
 	},
 
 	async getPortPath(nativePort: SerialPort): Promise<string|null> {
-		let ports = await WebSerialBinding.list();
-		for (let port of ports) {
+		const ports = await WebSerialBinding.list();
+		for (const port of ports) {
 			if (port.nativePort === nativePort)
 				return port.path;
 		}
