@@ -145,7 +145,7 @@ export class WebSerialPort implements WebSerialBindingPortInterface {
 
 	async read(buffer: Buffer, offset: number, length: number): Promise<{buffer: Buffer, bytesRead: number}> {
 		// Reuse redundant data from previous read.
-		let readedFromInternalBuffer = 0;
+		let readBytesFromInternalBuffer = 0;
 		if (this.internalBuffer.length > 0) {
 			const availFromBuffer = Math.min(length, this.internalBuffer.length);
 
@@ -153,46 +153,46 @@ export class WebSerialPort implements WebSerialBindingPortInterface {
 
 			length -= availFromBuffer;
 			offset += availFromBuffer;
-			readedFromInternalBuffer += availFromBuffer;
+			readBytesFromInternalBuffer += availFromBuffer;
 
 			this.internalBuffer = this.internalBuffer.slice(availFromBuffer);
 
 			if (!length)
-				return { buffer, bytesRead: readedFromInternalBuffer };
+				return { buffer, bytesRead: readBytesFromInternalBuffer };
 		}
 
 		this.locked && await this.waitForUnlock();
 
-		let readed;
+		let readBytes;
 		try {
-			readed = await this.reader.read();
+			readBytes = await this.reader.read();
 		} catch (e) {
 			if (!this.updatingPortSettings)
 				throw e;
 		}
 
-		if (!readed || readed.done) {
+		if (!readBytes || readBytes.done) {
 			if (this.updatingPortSettings)
 				return this.read(buffer, offset, length);
-			return { buffer, bytesRead: readedFromInternalBuffer };
+			return { buffer, bytesRead: readBytesFromInternalBuffer };
 		}
 
-		if (readed.value.length > length) {
+		if (readBytes.value.length > length) {
 			// A possibly impossible case when WebSerial returns more data than "node-serial" was requested.
 			// We just save any redundant data in an internal buffer and return it on the next read.
-			buffer.set(readed.value.slice(0, length), offset);
+			buffer.set(readBytes.value.slice(0, length), offset);
 
-			const redundantBytes = readed.value.slice(length);
+			const redundantBytes = readBytes.value.slice(length);
 
 			const newInternalBuffer = new Uint8Array(this.internalBuffer.length + redundantBytes.length)
 			newInternalBuffer.set(this.internalBuffer, 0);
 			newInternalBuffer.set(redundantBytes, this.internalBuffer.length);
 			this.internalBuffer = newInternalBuffer;
 
-			return { buffer, bytesRead: readedFromInternalBuffer + length };
+			return { buffer, bytesRead: readBytesFromInternalBuffer + length };
 		} else {
-			buffer.set(readed.value, offset);
-			return { buffer, bytesRead: readedFromInternalBuffer + readed.value.length };
+			buffer.set(readBytes.value, offset);
+			return { buffer, bytesRead: readBytesFromInternalBuffer + readBytes.value.length };
 		}
 	}
 

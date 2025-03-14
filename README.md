@@ -18,14 +18,14 @@
 # EXAMPLES
 1. List available and paired ports:
     ```js
-    let ports = await WebSerialBinding.list();
+    const ports = await WebSerialBinding.list();
     console.log(ports);
     ```
 2. Open any port:
 
     The browser will show pop-up with all available ports.
     ```js
-    let port = await new SerialPortStream({
+    const port = await new SerialPortStream({
         binding: WebSerialBinding,
         path: 'webserial://any',
         baudRate: 115200
@@ -35,11 +35,11 @@
 
     The browser will show pop-up with all available ports.
     ```js
-    let webSerialOpenOptions = {
+    const webSerialOpenOptions = {
         bufferSize: 4 * 1024 // https://developer.mozilla.org/en-US/docs/Web/API/SerialPort/open#buffersize
     };
 
-    let port = await new SerialPortStream({
+    const port = await new SerialPortStream({
         binding: WebSerialBinding,
         path: 'webserial://any',
         baudRate: 115200,
@@ -50,11 +50,11 @@
 
     The browser will show pop-up with all available ports which fit the requested filter.
     ```js
-    let webSerialRequestOptions = {
+    const webSerialRequestOptions = {
         filters: [{ usbVendorId: 0x067B, usbProductId: 0x2303 }]
     };
 
-    let port = await new SerialPortStream({
+    const port = await new SerialPortStream({
         binding: WebSerialBinding,
         path: 'webserial://any',
         baudRate: 115200,
@@ -65,9 +65,9 @@
 
     You can open a port using reference to the native SerialPort object.
     ```js
-    let webSerialPort = await navigator.requestPort({});
+    const webSerialPort = await navigator.requestPort({});
 
-    let port = new SerialPortStream({
+    const port = new SerialPortStream({
         binding: WebSerialBinding,
         path: 'webserial://any',
         baudRate: 115200,
@@ -76,9 +76,9 @@
     ```
 6. Open port by virtual path:
     ```js
-    let ports = await WebSerialBinding.list();
+    const ports = await WebSerialBinding.list();
 
-    let port = new SerialPortStream({
+    const port = new SerialPortStream({
         binding: WebSerialBinding,
         path: ports[0].path, // for example: webserial://usb0
         baudRate: 115200,
