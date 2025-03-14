@@ -5,11 +5,11 @@
 [WebSerial](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API) bindings for [serialport](https://www.npmjs.com/package/serialport) module.
 
 # INSTALL
-	```sh
-	npm i serialport-bindings-webserial
-	yarn add serialport-bindings-webserial
-	pnpm add serialport-bindings-webserial
-	```
+```sh
+npm i serialport-bindings-webserial
+yarn add serialport-bindings-webserial
+pnpm add serialport-bindings-webserial
+```
 
 # EXAMPLES
 1. List available and paired ports:
