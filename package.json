@@ -17,10 +17,11 @@
 	},
 	"devDependencies": {
 		"@serialport/bindings-interface": "^1.2.2",
+		"@serialport/stream": "^13.0.0",
 		"@tsconfig/node18": "^18.2.4",
 		"@types/node": "^20.12.7",
-		"@types/w3c-web-serial": "^1.0.6",
-		"typescript": "^5.4.5"
+		"@types/w3c-web-serial": "^1.0.8",
+		"typescript": "^5.8.2"
 	},
 	"packageManager": "pnpm@10.6.3+sha512.bb45e34d50a9a76e858a95837301bfb6bd6d35aea2c5d52094fa497a467c43f5c440103ce2511e9e0a2f89c3d6071baac3358fc68ac6fb75e2ceb3d2736065e6",
 	"pnpm": {

@@ -6,16 +6,17 @@ import {
 	PortStatus,
 	SetOptions,
 	UpdateOptions
-} from '@serialport/bindings-interface'
+} from '@serialport/bindings-interface';
 
-export interface WebSerialBindingInterface extends BindingInterface<WebSerialPortBinding, Required<WebSerialOpenOptions>, WebSerialPortInfo> {
+export interface WebSerialBindingInterface extends BindingInterface<WebSerialPortBinding, WebSerialOpenOptions, WebSerialPortInfo> {
 	getPortPath(nativePort: SerialPort): Promise<string | undefined>
 }
 
 export interface WebSerialOpenOptions extends OpenOptions {
-	webSerialOpenOptions: SerialOptions;
-	webSerialRequestOptions: SerialPortRequestOptions;
-	webSerialPort: SerialPort;
+	parity?: 'none' | 'even' | 'odd';
+	webSerialOpenOptions?: Partial<SerialOptions>;
+	webSerialRequestOptions?: SerialPortRequestOptions;
+	webSerialPort?: SerialPort | null;
 }
 
 export interface WebSerialPortInfo extends PortInfo {
@@ -27,7 +28,7 @@ export interface WebSerialBindingPortInterface extends BindingPortInterface {
 }
 
 interface WebSerialLock {
-	promise: Promise<boolean>;
+	promise?: Promise<boolean>;
 	resolve: (value: boolean) => void;
 	reject: (reason?: any) => void;
 }
@@ -46,14 +47,7 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 
 	constructor(port: SerialPort, openOptions: Required<WebSerialOpenOptions>) {
 		this.port = port;
-		this.openOptions = {
-			baudRate:	115200,
-			dataBits:	8,
-			stopBits:	1,
-			parity:		false,
-			rtscts:		false,
-			...openOptions
-		};
+		this.openOptions = openOptions;
 		this.internalBuffer = new Uint8Array(0);
 	}
 
@@ -81,10 +75,10 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 	private async _open() {
 		await this.port.open({
 			baudRate:		this.openOptions.baudRate,
-			dataBits:		this.openOptions.dataBits,
+			dataBits:		this.openOptions.dataBits as SerialOptions["dataBits"],
 			flowControl:	(this.openOptions.rtscts ? "hardware" : "none") as FlowControlType,
 			parity:			(this.openOptions.parity ? this.openOptions.parity : "none") as ParityType,
-			stopBits:		this.openOptions.stopBits,
+			stopBits:		this.openOptions.stopBits as  SerialOptions["stopBits"],
 			...(this.openOptions.webSerialOpenOptions || {}),
 		});
 
@@ -141,7 +135,7 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 
 	async write(buffer: Buffer): Promise<void> {
 		this.locked && await this.waitForUnlock();
-		return (this.lastWriteCall = this.writer.write(buffer));
+		return (this.lastWriteCall = this.writer?.write(new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)));
 	}
 
 	async read(buffer: Buffer, offset: number, length: number): Promise<{buffer: Buffer, bytesRead: number}> {
@@ -166,7 +160,7 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 
 		let readBytes;
 		try {
-			readBytes = await this.reader.read();
+			readBytes = await this.reader!.read();
 		} catch (e) {
 			if (!this.updatingPortSettings)
 				throw e;
@@ -243,9 +237,7 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 
 	private async lock() {
 		this.locked && await this.waitForUnlock();
-		this.locked.promise = new Promise((resolve, reject) => {
-			this.locked = { promise: undefined, resolve, reject };
-		});
+		this.locked = usePromiseWithResolvers<boolean>();
 	}
 
 	private unlock() {
@@ -305,37 +297,53 @@ function getPortInfo(counters: Record<string, number>, port: SerialPort): WebSer
 }
 
 export const WebSerialBinding: WebSerialBindingInterface = {
-	async open(options: Required<WebSerialOpenOptions>): Promise<WebSerialPortBinding> {
-		let binding: WebSerialPortBinding;
+	async open(options) {
+		let binding: WebSerialPortBinding | undefined;
+
+		const openOptions: Required<WebSerialOpenOptions> = {
+			dataBits: 8,
+			lock: true,
+			stopBits: 1,
+			parity: 'none',
+			rtscts: false,
+			xon: false,
+			xoff: false,
+			xany: false,
+			hupcl: true,
+			webSerialOpenOptions: {},
+			webSerialRequestOptions: {},
+			webSerialPort: null,
+			...options
+		};
 
 		if (!('serial' in navigator))
 			throw new Error(`Your browser is not supporting WebSerial API.`);
 
-		if (options.path == "webserial://any") {
-			if (options.webSerialPort) {
-				binding = new WebSerialPortBinding(options.webSerialPort, options);
+		if (openOptions.path == "webserial://any") {
+			if (openOptions.webSerialPort) {
+				binding = new WebSerialPortBinding(openOptions.webSerialPort, openOptions);
 			} else {
-				const port = await navigator.serial.requestPort(options.webSerialRequestOptions || {});
-				binding = new WebSerialPortBinding(port, options);
+				const port = await navigator.serial.requestPort(openOptions.webSerialRequestOptions);
+				binding = new WebSerialPortBinding(port, openOptions);
 			}
 		} else {
 			const ports = await WebSerialBinding.list();
 			for (const port of ports) {
-				if (port.path === options.path) {
-					binding = new WebSerialPortBinding(port.nativePort, options);
+				if (port.path === openOptions.path) {
+					binding = new WebSerialPortBinding(port.nativePort, openOptions);
 					break;
 				}
 			}
 		}
 
 		if (!binding)
-			throw new Error(`Invalid port path: ${options.path}`);
+			throw new Error(`Invalid port path: ${openOptions.path}`);
 
 		await binding.open();
 		return binding;
 	},
 
-	async list(): Promise<WebSerialPortInfo[]> {
+	async list() {
 		const counters: Record<string, number> = {};
 		let ports: WebSerialPortInfo[] = [];
 		if ('serial' in navigator) {
@@ -346,7 +354,7 @@ export const WebSerialBinding: WebSerialBindingInterface = {
 		return ports;
 	},
 
-	async getPortPath(nativePort: SerialPort): Promise<string | undefined> {
+	async getPortPath(nativePort) {
 		const ports = await WebSerialBinding.list();
 		for (const port of ports) {
 			if (port.nativePort === nativePort)
@@ -355,5 +363,15 @@ export const WebSerialBinding: WebSerialBindingInterface = {
 		return undefined;
 	}
 };
+
+function usePromiseWithResolvers<T>() {
+	let resolve: ((value: (PromiseLike<T> | T)) => void) | undefined;
+	let reject: ((reason?: any) => void) | undefined;
+	const promise = new Promise<T>((_resolve, _reject) => {
+		resolve = _resolve;
+		reject = _reject;
+	});
+	return { promise, resolve: resolve!, reject: reject! };
+}
 
 export default WebSerialBinding;
