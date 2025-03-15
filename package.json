@@ -3,8 +3,11 @@
 	"version": "0.4.1",
 	"description": "WebSerial bindings for serialport.",
 	"type": "module",
-	"main": "dist/index.js",
-	"types": "dist/index.d.ts",
+	"main": "dist/src/index.js",
+	"types": "dist/src/index.d.ts",
+	"files": [
+		"./dist/*"
+	],
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"pub": "npm version patch && npm publish --access public",
