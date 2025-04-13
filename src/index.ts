@@ -162,7 +162,10 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 		try {
 			readBytes = await this.reader!.read();
 		} catch (e) {
-			if (!this.updatingPortSettings)
+			const shouldIgnoreError =
+				this.updatingPortSettings ||
+				((e instanceof Error) && ["BreakError", "FramingError", "ParityError", "BufferOverrunError"].includes(e.name));
+			if (!shouldIgnoreError)
 				throw e;
 		}
 
