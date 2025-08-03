@@ -52,24 +52,22 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 	}
 
 	async open(): Promise<void> {
-		await this.lock();
-
 		if (!this.isOpen) {
+			await this.lock();
 			await this._open();
 			this.isOpen = true;
+			this.unlock();
 		}
-
-		this.unlock();
 	}
 
 	async close(): Promise<void> {
-		await this.lock();
 		if (this.isOpen) {
+			await this.lock();
 			this.isOpen = false;
 			await this._close();
 			this.internalBuffer = new Uint8Array(0);
+			this.unlock();
 		}
-		this.unlock();
 	}
 
 	private async _open() {
@@ -111,9 +109,8 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 	}
 
 	async update(options: UpdateOptions): Promise<void> {
-		await this.lock();
-
 		if (options.baudRate != this.openOptions.baudRate) {
+			await this.lock();
 			this.openOptions.baudRate = options.baudRate;
 			try {
 				this.updatingPortSettings = true;
@@ -128,9 +125,8 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 				this.updatingPortSettings = false;
 				throw e;
 			}
+			this.unlock();
 		}
-
-		this.unlock();
 	}
 
 	async write(buffer: Buffer): Promise<void> {
@@ -140,57 +136,62 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 
 	async read(buffer: Buffer, offset: number, length: number): Promise<{buffer: Buffer, bytesRead: number}> {
 		// Reuse redundant data from previous read.
-		let readBytesFromInternalBuffer = 0;
 		if (this.internalBuffer.length > 0) {
 			const availFromBuffer = Math.min(length, this.internalBuffer.length);
-
 			buffer.set(this.internalBuffer.slice(0, availFromBuffer), offset);
-
-			length -= availFromBuffer;
-			offset += availFromBuffer;
-			readBytesFromInternalBuffer += availFromBuffer;
-
 			this.internalBuffer = this.internalBuffer.slice(availFromBuffer);
-
-			if (!length)
-				return { buffer, bytesRead: readBytesFromInternalBuffer };
+			return { buffer, bytesRead: availFromBuffer };
 		}
 
 		this.locked && await this.waitForUnlock();
 
-		let readBytes;
-		try {
-			readBytes = await this.reader!.read();
-		} catch (e) {
-			const shouldIgnoreError =
-				this.updatingPortSettings ||
-				((e instanceof Error) && ["BreakError", "FramingError", "ParityError", "BufferOverrunError"].includes(e.name));
-			if (!shouldIgnoreError)
-				throw e;
-		}
+		let result: ReadableStreamReadResult<Uint8Array<ArrayBufferLike>> | undefined;
+		let shouldRepeat = false;
+		let reader = this.reader;
 
-		if (!readBytes || readBytes.done) {
-			if (this.updatingPortSettings)
-				return this.read(buffer, offset, length);
-			return { buffer, bytesRead: readBytesFromInternalBuffer };
-		}
+		do {
+			// Reader closed
+			if (!reader)
+				return { buffer, bytesRead: 0 };
 
-		if (readBytes.value.length > length) {
-			// A possibly impossible case when WebSerial returns more data than "node-serial" was requested.
+			try {
+				result = await reader.read();
+			} catch (e) {
+				const shouldIgnoreError =
+					this.updatingPortSettings ||
+					((e instanceof Error) && ["BreakError", "FramingError", "ParityError", "BufferOverrunError"].includes(e.name));
+				console.error(e);
+				if (!shouldIgnoreError)
+					throw e;
+			}
+
+			shouldRepeat = !result || (this.updatingPortSettings && result?.done);
+
+			if (shouldRepeat) {
+				this.locked && await this.waitForUnlock();
+				reader = this.reader;
+				shouldRepeat = true;
+			}
+		} while (shouldRepeat);
+
+		if (!result?.value) {
+			// Stream closed
+			return { buffer, bytesRead: 0 };
+		} else if (result.value.length > length) {
+			// A rare case when WebSerial returns more data than "node-serial" was requested.
 			// We just save any redundant data in an internal buffer and return it on the next read.
-			buffer.set(readBytes.value.slice(0, length), offset);
+			buffer.set(result.value.slice(0, length), offset);
 
-			const redundantBytes = readBytes.value.slice(length);
-
-			const newInternalBuffer = new Uint8Array(this.internalBuffer.length + redundantBytes.length)
+			const redundantBytes = result.value.slice(length);
+			const newInternalBuffer = new Uint8Array(this.internalBuffer.length + redundantBytes.length);
 			newInternalBuffer.set(this.internalBuffer, 0);
 			newInternalBuffer.set(redundantBytes, this.internalBuffer.length);
 			this.internalBuffer = newInternalBuffer;
 
-			return { buffer, bytesRead: readBytesFromInternalBuffer + length };
+			return { buffer, bytesRead: length };
 		} else {
-			buffer.set(readBytes.value, offset);
-			return { buffer, bytesRead: readBytesFromInternalBuffer + readBytes.value.length };
+			buffer.set(result.value, offset);
+			return { buffer, bytesRead: result.value.length };
 		}
 	}
 
@@ -320,7 +321,7 @@ export const WebSerialBinding: WebSerialBindingInterface = {
 		};
 
 		if (!('serial' in navigator))
-			throw new Error(`Your browser is not supporting WebSerial API.`);
+			throw new DOMException(`Your browser is not supporting WebSerial API.`, "NotSupportedError");
 
 		if (openOptions.path == "webserial://any") {
 			if (openOptions.webSerialPort) {
@@ -340,7 +341,7 @@ export const WebSerialBinding: WebSerialBindingInterface = {
 		}
 
 		if (!binding)
-			throw new Error(`Invalid port path: ${openOptions.path}`);
+			throw new DOMException(`Invalid port path: ${openOptions.path}`, "NotFoundError");
 
 		await binding.open();
 		return binding;
