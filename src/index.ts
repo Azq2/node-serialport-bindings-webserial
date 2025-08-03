@@ -160,9 +160,9 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 				const shouldIgnoreError =
 					this.updatingPortSettings ||
 					((e instanceof Error) && ["BreakError", "FramingError", "ParityError", "BufferOverrunError"].includes(e.name));
-				console.error(e);
 				if (!shouldIgnoreError)
 					throw e;
+				console.error(e);
 			}
 
 			shouldRepeat = !result || (this.updatingPortSettings && result?.done);
