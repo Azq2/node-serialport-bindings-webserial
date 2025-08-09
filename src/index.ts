@@ -88,20 +88,20 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 
 	private async _close() {
 		if (this.reader) {
-			try { await this.reader.cancel(); } catch (e) { }
+			await this.reader.cancel();
 			this.reader.releaseLock();
 			this.reader = undefined;
 		}
 
 		if (this.writer) {
-			try { await this.writer.close(); } catch (e) { }
+			await this.writer.close();
 			this.writer.releaseLock();
 			this.writer = undefined;
 		}
 
 		this.lastWriteCall = undefined;
 
-		try { await this.port.close(); } catch (e) { }
+		await this.port.close();
 	}
 
 	async getBaudRate(): Promise<{baudRate: number}> {
@@ -111,21 +111,19 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 	async update(options: UpdateOptions): Promise<void> {
 		if (options.baudRate != this.openOptions.baudRate) {
 			await this.lock();
+			this.updatingPortSettings = true;
 			this.openOptions.baudRate = options.baudRate;
 			try {
-				this.updatingPortSettings = true;
 				await this._close();
 				await this._open();
 				if (this.lastSignalsValues) {
 					// Restore signals
 					await this.port.setSignals(this.lastSignalsValues);
 				}
+			} finally {
 				this.updatingPortSettings = false;
-			} catch (e) {
-				this.updatingPortSettings = false;
-				throw e;
+				this.unlock();
 			}
-			this.unlock();
 		}
 	}
 
@@ -160,17 +158,18 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 				const shouldIgnoreError =
 					this.updatingPortSettings ||
 					((e instanceof Error) && ["BreakError", "FramingError", "ParityError", "BufferOverrunError"].includes(e.name));
-				if (!shouldIgnoreError)
+				if (!shouldIgnoreError) {
+					console.error(e);
 					throw e;
+				}
 				console.error(e);
 			}
 
-			shouldRepeat = !result || (this.updatingPortSettings && result?.done);
+			shouldRepeat = !result || (this.updatingPortSettings && result?.done && !result.value?.length);
 
 			if (shouldRepeat) {
 				this.locked && await this.waitForUnlock();
 				reader = this.reader;
-				shouldRepeat = true;
 			}
 		} while (shouldRepeat);
 
@@ -276,8 +275,8 @@ function getPortInfo(counters: Record<string, number>, port: SerialPort): WebSer
 	let url;
 	if (webInfo.usbVendorId) {
 		url = new URL(`webserial://usb`);
-		portInfo.vendorId = webInfo.usbVendorId;
-		portInfo.productId = webInfo.usbProductId;
+		portInfo.vendorId = webInfo.usbVendorId.toString(16).padStart(4, '0');
+		portInfo.productId = webInfo.usbProductId.toString(16).padStart(4, '0');
 	} else if (webInfo.bluetoothServiceClassId) {
 		url = new URL(`webserial://bluetooth`);
 	} else {
