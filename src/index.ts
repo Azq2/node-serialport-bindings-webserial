@@ -88,13 +88,21 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 
 	private async _close() {
 		if (this.reader) {
-			await this.reader.cancel();
+			try {
+				await this.reader.cancel();
+			} catch (e) {
+				console.error(e);
+			}
 			this.reader.releaseLock();
 			this.reader = undefined;
 		}
 
 		if (this.writer) {
-			await this.writer.close();
+			try {
+				await this.writer.close();
+			} catch (e) {
+				console.error(e);
+			}
 			this.writer.releaseLock();
 			this.writer = undefined;
 		}
@@ -158,11 +166,10 @@ export class WebSerialPortBinding implements WebSerialBindingPortInterface {
 				const shouldIgnoreError =
 					this.updatingPortSettings ||
 					((e instanceof Error) && ["BreakError", "FramingError", "ParityError", "BufferOverrunError"].includes(e.name));
-				if (!shouldIgnoreError) {
-					console.error(e);
+				if (!shouldIgnoreError)
 					throw e;
-				}
-				console.error(e);
+				// Prevent infinite loop on BreakError
+				await new Promise(resolve => setTimeout(resolve, 0));
 			}
 
 			shouldRepeat = !result || (this.updatingPortSettings && result?.done && !result.value?.length);
