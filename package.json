@@ -3,17 +3,16 @@
 	"version": "0.5.7",
 	"description": "WebSerial bindings for serialport.",
 	"main": "dist/src/index.js",
-	"types": "src/types.d.ts",
+	"types": "dist/src/types.d.ts",
 	"type": "module",
 	"files": [
-		"dist/*",
-		"src/types.d.ts"
+		"dist/*"
 	],
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"pub": "npm version patch && npm publish --access public",
-		"build": "tsc",
-		"watch": "tsc -w"
+		"build": "cp src/types.d.ts dist/src/types.d.ts && tsc",
+		"watch": "cp src/types.d.ts dist/src/types.d.ts && tsc -w"
 	},
 	"author": "kirill.zhumarin@gmail.com",
 	"license": "MIT",
