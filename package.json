@@ -11,8 +11,8 @@
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"pub": "npm version patch && npm publish --access public",
-		"build": "mkdir -p dist/src && cp src/types.d.ts dist/src/types.d.ts && tsc",
-		"watch": "mkdir -p dist/src && cp src/types.d.ts dist/src/types.d.ts && tsc -w"
+		"build": "mkdir -p dist/src && cp src/*.d.ts dist/src && tsc",
+		"watch": "mkdir -p dist/src && cp src/*.d.ts dist/src && tsc -w"
 	},
 	"author": "kirill.zhumarin@gmail.com",
 	"license": "MIT",
