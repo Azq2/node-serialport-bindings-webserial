@@ -4,19 +4,13 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-patchedDependencies:
-  '@serialport/bindings-interface':
-    hash: 23303df39a158977b3a3d4663860e68d1bfed71932bb1c9e14cb16f119e81329
-    path: patches/@serialport__bindings-interface.patch
-
 importers:
 
   .:
-    dependencies:
+    devDependencies:
       '@serialport/bindings-interface':
         specifier: ^1.2.2
-        version: 1.2.2(patch_hash=23303df39a158977b3a3d4663860e68d1bfed71932bb1c9e14cb16f119e81329)
-    devDependencies:
+        version: 1.2.2
       '@serialport/stream':
         specifier: ^13.0.0
         version: 13.0.0
@@ -74,11 +68,11 @@ packages:
 
 snapshots:
 
-  '@serialport/bindings-interface@1.2.2(patch_hash=23303df39a158977b3a3d4663860e68d1bfed71932bb1c9e14cb16f119e81329)': {}
+  '@serialport/bindings-interface@1.2.2': {}
 
   '@serialport/stream@13.0.0':
     dependencies:
-      '@serialport/bindings-interface': 1.2.2(patch_hash=23303df39a158977b3a3d4663860e68d1bfed71932bb1c9e14cb16f119e81329)
+      '@serialport/bindings-interface': 1.2.2
       debug: 4.4.0
     transitivePeerDependencies:
       - supports-color
