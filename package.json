@@ -1,6 +1,6 @@
 {
 	"name": "serialport-bindings-webserial",
-	"version": "0.5.9",
+	"version": "0.5.10",
 	"description": "WebSerial bindings for serialport.",
 	"main": "dist/src/index.js",
 	"types": "dist/src/types.d.ts",
