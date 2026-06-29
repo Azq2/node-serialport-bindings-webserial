@@ -1,2 +1,2 @@
 /// <reference path="./serialport-bindings-interface.d.ts" />
-export * from './index';
+export * from './index.js';
